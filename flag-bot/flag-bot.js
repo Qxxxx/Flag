@@ -66,9 +66,8 @@ async function onMessage(msg) {
   console.log(msg.text())
 
 
-  if (msg.type() == bot.Message.Type.Text &&
-    /@Flag/i.test(msg.text())
-    /*&& !msg.self()*/
+  if ((msg.type() == bot.Message.Type.Text) &&
+    (/@Flag/i.test(msg.text())) && (!msg.self())
   ) {
     const topic = await msg.room().topic()
     const talker_name = msg.talker().name()
@@ -90,8 +89,8 @@ async function onMessage(msg) {
     return
   }
 
-  if (msg.type() == bot.Message.Type.Text &&
-    /\$myrecentflag/i.test(msg.text())
+  if ((msg.type() == bot.Message.Type.Text) &&
+    (/\$myrecentflag/i.test(msg.text())) && (!msg.self())
   ) {
     const topic = await msg.room().topic()
     const talker_name = msg.talker().name()
@@ -113,8 +112,8 @@ async function onMessage(msg) {
 
   }
 
-  if (msg.type() == bot.Message.Type.Text &&
-    /\$myallflags/i.test(msg.text())
+  if ((msg.type() == bot.Message.Type.Text) &&
+    (/\$myallflags/i.test(msg.text())) && (!msg.self())
   ) {
     const topic = await msg.room().topic()
     const talker_name = msg.talker().name()
@@ -141,8 +140,8 @@ async function onMessage(msg) {
     });
   }
 
-  if (msg.type() == bot.Message.Type.Text &&
-    /\$deleterecentflag/i.test(msg.text())
+  if ((msg.type() == bot.Message.Type.Text) &&
+    (/\$deleterecentflag/i.test(msg.text())) && (!msg.self())
   ) {
     const topic = await msg.room().topic()
     const talker_name = msg.talker().name()
@@ -162,7 +161,7 @@ async function onMessage(msg) {
       msg.say(`Hi ${talker_name}, you have already been in recording mode. Please share image/video to record your improvement.`)
       return
     }
-    
+
     fs.readFile(json_path, (err, data) => {
       if (err) {
         msg.say(`${talker_name} has never created flag in ${topic} yet.`)
@@ -193,7 +192,7 @@ async function onMessage(msg) {
     //console.log(`msg.self():  ${msg.self()}`)
     const topic = await msg.room().topic()
     const talker_name = msg.talker().name()
-    
+
     if (recorder[`${topic}/${talker_name}`]) {
       msg.say(`Impressive ,${talker_name}!! Can't wait to see the next step!!`)
       delete recorder[`${topic}/${talker_name}`]
@@ -209,8 +208,7 @@ async function onMessage(msg) {
     (!msg.self())) {
     const topic = await msg.room().topic()
     const talker_name = msg.talker().name()
-    if (!recorder[`${topic}/${talker_name}`])
-    {
+    if (!recorder[`${topic}/${talker_name}`]) {
       return
     }
     path = recorder[`${topic}/${talker_name}`]
