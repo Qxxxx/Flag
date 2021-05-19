@@ -4,7 +4,7 @@
   "description": "Flag bot for wechat group",
   "main": "flag-bot/flag-bot.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -22,6 +22,7 @@
   "dependencies": {
     "dotenv": "^8.2.0",
     "jshint": "^2.12.0",
+    "mocha": "^8.4.0",
     "qrcode-terminal": "^0.12.0",
     "wechaty": "^0.60.3",
     "wechaty-plugin-contrib": "^0.14.16"

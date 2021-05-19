@@ -63,16 +63,22 @@ function onError(e) {
 
 
 async function onMessage(msg) {
-  console.log(msg.text())
+  const msg_type = msg.type()
+  const room = msg.room()
+
+  if (room) {
+    var topic = await room.topic()
+  }
+
+  const talker_name = msg.talker().name()
+  const text = msg.text()
+  console.log(text)
+  is_self = msg.self()
 
 
-  if ((msg.type() == bot.Message.Type.Text) &&
-    (/@Flag/i.test(msg.text())) && (!msg.self())
+  if ((msg_type == bot.Message.Type.Text) &&
+    (/@Flag/i.test(text)) && (!is_self)
   ) {
-    const topic = await msg.room().topic()
-    const talker_name = msg.talker().name()
-    // console.log(`${date_time}, \n Flag from ${talker_name} in ${topic} detected!!!`)
-    // msg.say(`${date_time}, \n Flag from ${talker_name} in ${topic} detected!!!`)
     const data = utils.createJsonFromMessage(msg)
     console.log(`${data},  ${!data} `)
     if (data == "") {
@@ -89,11 +95,9 @@ async function onMessage(msg) {
     return
   }
 
-  if ((msg.type() == bot.Message.Type.Text) &&
-    (/\$myrecentflag/i.test(msg.text())) && (!msg.self())
+  if ((msg_type == bot.Message.Type.Text) &&
+    (/\$myrecentflag/i.test(text)) && (!is_self)
   ) {
-    const topic = await msg.room().topic()
-    const talker_name = msg.talker().name()
     path = `data/${topic}/${talker_name}/flag.json`
     //flags = readJson(`${path}/flag.json`)
     fs.readFile(path, (err, data) => {
@@ -112,11 +116,9 @@ async function onMessage(msg) {
 
   }
 
-  if ((msg.type() == bot.Message.Type.Text) &&
-    (/\$myallflags/i.test(msg.text())) && (!msg.self())
+  if ((msg_type == bot.Message.Type.Text) &&
+    (/\$myallflags/i.test(text)) && (!is_self)
   ) {
-    const topic = await msg.room().topic()
-    const talker_name = msg.talker().name()
     path = `data/${topic}/${talker_name}/flag.json`
     console.log("all flags");
     //flags = readJson(`${path}/flag.json`)
@@ -140,22 +142,18 @@ async function onMessage(msg) {
     });
   }
 
-  if ((msg.type() == bot.Message.Type.Text) &&
-    (/\$deleterecentflag/i.test(msg.text())) && (!msg.self())
+  if ((msg_type == bot.Message.Type.Text) &&
+    (/\$deleterecentflag/i.test(text)) && (!is_self)
   ) {
-    const topic = await msg.room().topic()
-    const talker_name = msg.talker().name()
     path = `data/${topic}/${talker_name}/flag.json`
     //flags = readJson(`${path}/flag.json`)
     utils.deleteRecentFlagInJSON(path)
     msg.say(`The recent flag of ${talker_name} has been removed. Please check again.`)
   }
 
-  if ((msg.type() == bot.Message.Type.Text) &&
-    (/\$record/i.test(msg.text()) && (!msg.self()))
+  if ((msg_type == bot.Message.Type.Text) &&
+    (/\$record/i.test(text) && (!is_self))
   ) {
-    const topic = await msg.room().topic()
-    const talker_name = msg.talker().name()
     json_path = `data/${topic}/${talker_name}/flag.json`
     if (recorder[`${topic}/${talker_name}`]) {
       msg.say(`Hi ${talker_name}, you have already been in recording mode. Please share image/video to record your improvement.`)
@@ -186,12 +184,10 @@ async function onMessage(msg) {
     });
   }
 
-  if ((msg.type() == bot.Message.Type.Text) &&
-    (/\$endrecord/i.test(msg.text()) && (!msg.self()))
+  if ((msg_type == bot.Message.Type.Text) &&
+    (/\$endrecord/i.test(text) && (!is_self))
   ) {
-    //console.log(`msg.self():  ${msg.self()}`)
-    const topic = await msg.room().topic()
-    const talker_name = msg.talker().name()
+    //console.log(`is_self:  ${is_self}`)
 
     if (recorder[`${topic}/${talker_name}`]) {
       msg.say(`Impressive ,${talker_name}!! Can't wait to see the next step!!`)
@@ -203,11 +199,9 @@ async function onMessage(msg) {
     }
   }
 
-  if (((msg.type() == bot.Message.Type.Image) ||
-    (msg.type() == bot.Message.Type.Video)) &&
-    (!msg.self())) {
-    const topic = await msg.room().topic()
-    const talker_name = msg.talker().name()
+  if (((msg_type == bot.Message.Type.Image) ||
+    (msg_type == bot.Message.Type.Video)) &&
+    (!is_self)) {
     if (!recorder[`${topic}/${talker_name}`]) {
       return
     }
