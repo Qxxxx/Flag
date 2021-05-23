@@ -4,7 +4,7 @@ const {
 } = require('wechaty')
 
 const qrTerm = require('qrcode-terminal')
-
+const request = require('request');
 const utils = require("./utils.js");
 const commands = require("./commands.js");
 const fs = require('fs')
@@ -60,7 +60,7 @@ function onError(e) {
   }
   */
 }
-
+const intent_dic = { "Sport": "运动", "Study": "学习", "Livelonger": "养生", "record": "打卡", "Reject": "否定", "None": "None" }
 
 async function onMessage(msg) {
   const msg_type = msg.type()
@@ -71,23 +71,40 @@ async function onMessage(msg) {
   }
 
   const talker_name = msg.talker().name()
-  const text = msg.text()
-  console.log(text)
+  text = msg.text()
   is_self = msg.self()
+  date = msg.date().toDateString()
 
 
   if ((msg_type == bot.Message.Type.Text) &&
     (/@Flag/i.test(text)) && (!is_self)
   ) {
-    const data = utils.createJsonFromMessage(msg)
-    console.log(`${data},  ${!data} `)
-    if (data == "") {
+    var flag_json = {}
+    flag_json["date"] = date
+    flags = utils.transferTextToFlags(text)
+    for (i = 0; i < flags.length; i++) {
+      var flag = flags[i]
+      intent = await utils.getPrediction(flag)
+      if (intent) {
+        console.log(intent)
+        flag_json[i] = {
+          "type": intent_dic[intent],
+          "content": flag
+        }
+      }
+      else {
+        console.log("type is no exist!")
+      }
+    }
+
+    console.log(`(${topic})${talker_name}: ${text}`)
+    if (flag_json == "") {
       msg.say(`Hello ${talker_name}, empty flag detected!`)
       return
     }
     path = `data/${topic}/${talker_name}/flag.json`
     try {
-      utils.writeJSON(data, path)
+      utils.writeJSON(flag_json, path)
       msg.say(`Thanks ${talker_name}, flag received.`)
     } catch (err) {
       console.log(err);
@@ -96,57 +113,21 @@ async function onMessage(msg) {
   }
 
   if ((msg_type == bot.Message.Type.Text) &&
-    (/\$myrecentflag/i.test(text)) && (!is_self)
+    (/\$recent/i.test(text)) && (!is_self)
   ) {
-    path = `data/${topic}/${talker_name}/flag.json`
-    //flags = readJson(`${path}/flag.json`)
-    fs.readFile(path, (err, data) => {
-      if (err) {
-        msg.say(`${talker_name} has never created flag in ${topic} yet.`)
-        return console.log(err);
-      }
-      let flags = JSON.parse(data);
-      if (flags.flags.length == 0) {
-        return msg.say(`Currently ${talker_name} has no flag at all.`)
-      }
-      recent_flag = flags.flags[flags.flags.length - 1]
-      console.log(recent_flag);
-      msg.say(`${recent_flag["date"]}:\n${recent_flag["flag"]}`)
-    });
-
+    utils.reportRecentFlag(topic, talker_name, msg);
   }
 
   if ((msg_type == bot.Message.Type.Text) &&
-    (/\$myallflags/i.test(text)) && (!is_self)
+    (/\$all/i.test(text)) && (!is_self)
   ) {
-    path = `data/${topic}/${talker_name}/flag.json`
-    console.log("all flags");
-    //flags = readJson(`${path}/flag.json`)
-    fs.readFile(path, (err, data) => {
-      if (err) {
-        msg.say(`${talker_name} has never created flag in ${topic} yet.`);
-        return console.log(err);
-      }
-      let flags = JSON.parse(data);
-      if (flags.flags.length == 0) {
-        return msg.say(`Currently ${talker_name} has no flag at all.`)
-      }
-      flags_str = ""
-      flags.flags.forEach(function (flag) {
-        //var tableName = table.name;
-        flags_str = flags_str + `${flag["date"]}:\n${flag["flag"]}\n\n`
-      });
-      console.log(flags_str);
-      msg.say(flags_str)
-
-    });
+    utils.reportAllFlags(topic, talker_name, msg);
   }
 
   if ((msg_type == bot.Message.Type.Text) &&
-    (/\$deleterecentflag/i.test(text)) && (!is_self)
+    (/\$delete/i.test(text)) && (!is_self)
   ) {
     path = `data/${topic}/${talker_name}/flag.json`
-    //flags = readJson(`${path}/flag.json`)
     utils.deleteRecentFlagInJSON(path)
     msg.say(`The recent flag of ${talker_name} has been removed. Please check again.`)
   }
