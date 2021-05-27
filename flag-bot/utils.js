@@ -222,9 +222,43 @@ function deleteRecentFlagInJSON(path) {
     })
 }
 
+async function flagsIntent(flags, date,intent_dic) {
+    var flag_json = {}
+    flag_json["date"] = date
+    for (i = 0; i < flags.length; i++) {
+        var flag = flags[i]
+        intent = await getPrediction(flag)
+        if (intent) {
+            console.log(intent)
+            flag_json[i] = {
+                "type": intent_dic[intent],
+                "content": flag
+            }
+        }
+        else {
+            console.log("type is no exist!")
+        }
+    }
+    return flag_json
+}
+
+function saveFlagJson(topic, talker_name, flag_json,msg) {
+    if (flag_json == "") {
+        msg.say(`Hello ${talker_name}, empty flag detected!`)
+        return
+    }
+    path = `data/${topic}/${talker_name}/flag.json`
+    try {
+        writeJSON(flag_json, path)
+        msg.say(`Thanks ${talker_name}, flag received.`)
+    } catch (err) {
+        console.log(err);
+    }
+}
+
 module.exports = {
     createJsonFromMessage, writeJSON, deleteRecentFlagInJSON,
     removeElementInArray, extract_meaningful_part, getPrediction,
     flagToString, reportRecentFlag, transferTextToFlags,
-    reportAllFlags
+    reportAllFlags, flagsIntent,saveFlagJson
 };

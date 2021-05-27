@@ -2,11 +2,12 @@ const {
   Wechaty,
   config,
 } = require('wechaty')
-
+var exec = require('child_process').exec;
 const qrTerm = require('qrcode-terminal')
 const request = require('request');
 const utils = require("./utils.js");
 const commands = require("./commands.js");
+const fileBox = require('file-box').FileBox;
 const fs = require('fs')
 const bot = new Wechaty({
   name: 'FlagBot',
@@ -79,37 +80,57 @@ async function onMessage(msg) {
   if ((msg_type == bot.Message.Type.Text) &&
     (/@Flag/i.test(text)) && (!is_self)
   ) {
-    var flag_json = {}
-    flag_json["date"] = date
-    flags = utils.transferTextToFlags(text)
-    for (i = 0; i < flags.length; i++) {
-      var flag = flags[i]
-      intent = await utils.getPrediction(flag)
-      if (intent) {
-        console.log(intent)
-        flag_json[i] = {
-          "type": intent_dic[intent],
-          "content": flag
-        }
-      }
-      else {
-        console.log("type is no exist!")
-      }
-    }
-
-    console.log(`(${topic})${talker_name}: ${text}`)
-    if (flag_json == "") {
-      msg.say(`Hello ${talker_name}, empty flag detected!`)
+    intent_text = text.replace(/@Flag/i, '')
+    intent_text = intent_text.replace(/\s/i, '')
+    console.log("intent_text:",intent_text)
+    if (intent_text=='')
+    {
+      msg.say("叫爸爸干嘛？")
       return
     }
-    path = `data/${topic}/${talker_name}/flag.json`
-    try {
-      utils.writeJSON(flag_json, path)
-      msg.say(`Thanks ${talker_name}, flag received.`)
-    } catch (err) {
-      console.log(err);
+    intent_text = intent_text.replace(/\s/i, '')
+    // intent = await utils.getPrediction(intent_text)
+    // console.log("intent_text: ", intent_text)
+    // console.log("intent: ", intent)
+    if (/打卡/i.test(intent_text)) {
+      intent_text = intent_text.replace(/打卡/i, '')
+      path = `data/${topic}/${talker_name}/commit.txt`
+      fs.appendFile(path, `${date}\n`, err => {
+        if (err) {
+          console.error(err)
+          return
+        }
+      })
+      msg.say(`${talker_name}的${intent_text}打卡已被记录，可以通过 $report 来检查打卡记录。\n\
+      并且记录图片和视频功能已经开启，如果需要记录可以继续分享图片或者视频。\n如果不需要也可以通过 @Flag 没图你说寂寞 来结束。`)
+      mkdirp(`data/${topic}/${talker_name}/${intent_text}`, function (err) {
+        if (err) return console.log(err);
+        //console.log(`${file_path} created.`)
+        //msg.say(`Good job! Looking forward to ${talker_name}'s process file.`)
+      })
+      recorder[`${topic}/${talker_name}`] = `data/${topic}/${talker_name}/${intent_text}`
     }
-    return
+    else if (/没图你说寂寞/i.test(intent_text)) {
+      if (recorder[`${topic}/${talker_name}`]) {
+        msg.say("可不么，记录结束。")
+        delete recorder[`${topic}/${talker_name}`]
+        return
+      }
+    }
+    else if (/么了/i.test(intent_text)) {
+      if (recorder[`${topic}/${talker_name}`]) {
+        msg.say("太优秀了！Bye")
+        delete recorder[`${topic}/${talker_name}`]
+        return
+      }
+    }
+    else {
+      flags = utils.transferTextToFlags(text)
+      flag_json = await utils.flagsIntent(flags, date, intent_dic)
+      await utils.saveFlagJson(topic, talker_name, flag_json, msg)
+      //utils.reportRecentFlag(topic, talker_name, msg);
+      msg.say("flag已经收到，可以通过 $recent 来查看是否添加正确。\n如果出现分类错误，之后会添加 $fix 方法来修改分类")
+    }
   }
 
   if ((msg_type == bot.Message.Type.Text) &&
@@ -119,9 +140,35 @@ async function onMessage(msg) {
   }
 
   if ((msg_type == bot.Message.Type.Text) &&
+    (/\$report/i.test(text)) && (!is_self)
+  ) {
+    exec(`python3 plot/test.py data/测试用/季启光/commit.txt`, function (error, stdout, stderr) {
+      if (stdout.length > 1) {
+        console.log('you offer args:', stdout);
+      } else {
+        console.log('you don\'t offer args');
+      }
+      if (error) {
+        console.info('stderr : ' + stderr);
+      }
+    });
+    var file = fileBox.fromFile("tmp/calendar-heatmap.png")
+    msg.say(file)
+  }
+
+  if ((msg_type == bot.Message.Type.Text) &&
     (/\$all/i.test(text)) && (!is_self)
   ) {
     utils.reportAllFlags(topic, talker_name, msg);
+  }
+  if ((msg_type == bot.Message.Type.Text) &&
+    (/\$fix/i.test(text)) && (!is_self)
+  ) {
+    fix_text = text.replace(/\$fix/i, '')
+    fix_text = fix_text.replace(/\s/i, '')
+    items = fix_text.split("=")
+    console.log(items)
+    msg.say("有错误需要修改")
   }
 
   if ((msg_type == bot.Message.Type.Text) &&
@@ -130,6 +177,19 @@ async function onMessage(msg) {
     path = `data/${topic}/${talker_name}/flag.json`
     utils.deleteRecentFlagInJSON(path)
     msg.say(`The recent flag of ${talker_name} has been removed. Please check again.`)
+  }
+
+  if ((msg_type == bot.Message.Type.Text) &&
+    (/\$help/i.test(text)) && (!is_self)
+  ) {
+      var help = "Flag-Bot 使用方法如下：\n"
+      help += "设定下周Flag方法： 例子：\n@Flag 1. 游戏通关 2. 结婚生子\n\n"
+      help += "查看最近的flag： $recent\n\n"
+      help += "查看所有的flag： $all\n\n"
+      help += "打卡： @Flag xx打卡\n"
+      help += "建议加入打卡内容 如 学习打卡 或者 运动打卡，一方便后期处理\n\n"
+      help += "删除最近的flag: $delete\n"
+      msg.say(help)
   }
 
   if ((msg_type == bot.Message.Type.Text) &&
@@ -191,7 +251,7 @@ async function onMessage(msg) {
     const name = file.name
     console.log('Save file to: ' + name)
     file.toFile(`${path}/${name}`)
-    msg.say(`Hello ${talker_name}, file received! You can continue with more files or send $endrecord to finish the record process~`)
+    msg.say(`Hello ${talker_name}, 图已经收到，还有不？没了的话就 @Flag 么了 来结束`)
   }
 
 }
