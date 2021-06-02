@@ -3,6 +3,7 @@ const {
   config,
 } = require('wechaty')
 var exec = require('child_process').exec;
+var execSync = require('child_process').execSync;
 const qrTerm = require('qrcode-terminal')
 const request = require('request');
 const utils = require("./utils.js");
@@ -82,9 +83,8 @@ async function onMessage(msg) {
   ) {
     intent_text = text.replace(/@Flag/i, '')
     intent_text = intent_text.replace(/\s/i, '')
-    console.log("intent_text:",intent_text)
-    if (intent_text=='')
-    {
+    console.log("intent_text:", intent_text)
+    if (intent_text == '') {
       msg.say("叫爸爸干嘛？")
       return
     }
@@ -142,7 +142,7 @@ async function onMessage(msg) {
   if ((msg_type == bot.Message.Type.Text) &&
     (/\$report/i.test(text)) && (!is_self)
   ) {
-    exec(`python3 plot/test.py data/测试用/季启光/commit.txt`, function (error, stdout, stderr) {
+    execSync(`python3 plot/test.py data/${topic}/${talker_name}/commit.txt`, function (error, stdout, stderr) {
       if (stdout.length > 1) {
         console.log('you offer args:', stdout);
       } else {
@@ -182,14 +182,14 @@ async function onMessage(msg) {
   if ((msg_type == bot.Message.Type.Text) &&
     (/\$help/i.test(text)) && (!is_self)
   ) {
-      var help = "Flag-Bot 使用方法如下：\n"
-      help += "设定下周Flag方法： 例子：\n@Flag 1. 游戏通关 2. 结婚生子\n\n"
-      help += "查看最近的flag： $recent\n\n"
-      help += "查看所有的flag： $all\n\n"
-      help += "打卡： @Flag xx打卡\n"
-      help += "建议加入打卡内容 如 学习打卡 或者 运动打卡，一方便后期处理\n\n"
-      help += "删除最近的flag: $delete\n"
-      msg.say(help)
+    var help = "Flag-Bot 使用方法如下：\n"
+    help += "设定下周Flag方法： 例子：\n@Flag 1. 游戏通关 2. 结婚生子\n\n"
+    help += "查看最近的flag： $recent\n\n"
+    help += "查看所有的flag： $all\n\n"
+    help += "打卡： @Flag xx打卡\n"
+    help += "建议加入打卡内容 如 学习打卡 或者 运动打卡，一方便后期处理\n\n"
+    help += "删除最近的flag: $delete\n"
+    msg.say(help)
   }
 
   if ((msg_type == bot.Message.Type.Text) &&
